@@ -4,15 +4,28 @@ Routes only read the request, call the services, and shape the answer.
 """
 
 from datetime import date, datetime, time, timedelta, timezone
+from functools import lru_cache
 
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.api.data import get_actuals, get_forecasts
-from app.api.schemas import ForecastResponse, HourlyPoint, Metrics
+from app.api.schemas import (
+    AccuracyResponse,
+    ForecastResponse,
+    HourlyPoint,
+    HourOfDayError,
+    HorizonRow,
+    Metrics,
+)
 from app.config import DELIVERY_FROM, DELIVERY_TO
-from app.services.accuracy import compute_metrics, match_with_actuals
-from app.services.forecast_selection import forecasts_for_decision
+from app.services.accuracy import (
+    accuracy_by_horizon,
+    compute_metrics,
+    error_by_hour_of_day,
+    match_with_actuals,
+)
+from app.services.forecast_selection import forecasts_at_horizon, forecasts_for_decision
 
 router = APIRouter(prefix="/api")
 
@@ -55,3 +68,43 @@ def get_forecast(
         points=to_points(matched),
         metrics=Metrics(**compute_metrics(matched)),
     )
+
+
+@router.get("/accuracy", response_model=AccuracyResponse)
+def get_accuracy(
+    decision_hour: int = Query(9, ge=0, le=23, description="Used when horizon_hours is not given"),
+    horizon_hours: int | None = Query(None, ge=1, le=48, description="If given, evaluate forecasts made at least N hours ahead"),
+    forecasts: pd.DataFrame = Depends(get_forecasts),
+    actuals: pd.DataFrame = Depends(get_actuals),
+) -> AccuracyResponse:
+    """Accuracy over all January delivery days, by decision time OR by fixed horizon."""
+    if horizon_hours is not None:
+        selected = forecasts_at_horizon(forecasts, horizon_hours)
+        method = "horizon"
+    else:
+        selected = forecasts_for_decision(forecasts, decision_hour)
+        method = "decision"
+
+    matched = match_with_actuals(selected, actuals)
+
+    return AccuracyResponse(
+        method=method,
+        decision_hour=decision_hour if method == "decision" else None,
+        horizon_hours=horizon_hours,
+        metrics=Metrics(**compute_metrics(matched)),
+        by_hour_of_day=[HourOfDayError(**row) for row in error_by_hour_of_day(matched).to_dict("records")],
+        points=to_points(matched),
+    )
+
+
+@lru_cache
+def _horizon_table() -> list[dict]:
+    """The 48-horizon table never changes, so compute it once."""
+    table = accuracy_by_horizon(get_forecasts(), get_actuals())
+    return table.astype(object).where(table.notna(), None).to_dict("records")
+
+
+@router.get("/accuracy/horizons", response_model=list[HorizonRow])
+def get_accuracy_by_horizon() -> list[HorizonRow]:
+    """How accuracy changes with forecast horizon (1 to 48 hours ahead)."""
+    return [HorizonRow(**row) for row in _horizon_table()]

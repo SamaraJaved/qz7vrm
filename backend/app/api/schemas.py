@@ -32,3 +32,26 @@ class ForecastResponse(BaseModel):
     forecast_published_at: datetime | None
     points: list[HourlyPoint]
     metrics: Metrics
+
+
+class HourOfDayError(BaseModel):
+    hour: int
+    mae_mw: float
+    bias_mw: float
+
+
+class AccuracyResponse(BaseModel):
+    method: str
+    decision_hour: int | None
+    horizon_hours: int | None
+    metrics: Metrics
+    by_hour_of_day: list[HourOfDayError]
+    points: list[HourlyPoint]
+
+
+class HorizonRow(BaseModel):
+    horizon_hours: int
+    mae_mw: float | None
+    bias_mw: float | None
+    p90_error_mw: float | None
+    hours: int
