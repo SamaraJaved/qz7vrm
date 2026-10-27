@@ -18,3 +18,6 @@ ACTUALS_DATE_TO = "2026-02-01"
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 FORECASTS_FILE = DATA_DIR / "forecasts.csv"
 ACTUALS_FILE = DATA_DIR / "actuals.csv"
+# Delivery days we evaluate: decisions in January -> deliveries 2 Jan to 1 Feb
+DELIVERY_FROM = "2026-01-02"
+DELIVERY_TO = "2026-02-01"
