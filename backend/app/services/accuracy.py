@@ -3,7 +3,7 @@ Accuracy: put forecasts next to actuals and measure the errors.
 """
 
 import pandas as pd
-
+from app.services.forecast_selection import forecasts_at_horizon
 from app.config import DELIVERY_FROM, DELIVERY_TO
 
 
@@ -57,3 +57,17 @@ def error_by_hour_of_day(matched: pd.DataFrame) -> pd.DataFrame:
         "bias_mw": grouped.mean(),
     })
     return table.round(1).reset_index(names="hour")
+def accuracy_by_horizon(cleaned_forecasts: pd.DataFrame, actuals: pd.DataFrame, horizons=range(1, 49)) -> pd.DataFrame:
+    """For each horizon N (hours ahead), how accurate were forecasts made at least N hours early?"""
+    rows = []
+    for h in horizons:
+        matched = match_with_actuals(forecasts_at_horizon(cleaned_forecasts, h), actuals)
+        m = compute_metrics(matched)
+        rows.append({
+            "horizon_hours": h,
+            "mae_mw": m.get("mae_mw"),
+            "bias_mw": m.get("bias_mw"),
+            "p90_error_mw": m.get("p90_error_mw"),
+            "hours": m["hours"],
+        })
+    return pd.DataFrame(rows)
