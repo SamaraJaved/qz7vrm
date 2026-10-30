@@ -2,6 +2,7 @@
 Settings for the whole backend, kept in ONE place.
 """
 
+import os
 from pathlib import Path
 
 # Where Elexon's API lives
@@ -21,3 +22,6 @@ ACTUALS_FILE = DATA_DIR / "actuals.csv"
 # Delivery days we evaluate: decisions in January -> deliveries 2 Jan to 1 Feb
 DELIVERY_FROM = "2026-01-02"
 DELIVERY_TO = "2026-02-01"
+
+# Frontend addresses allowed to call the API (comma-separated in the env var)
+CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(",")

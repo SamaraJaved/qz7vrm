@@ -1,3 +1,14 @@
-   .venv/
-   __pycache__/
-   data/raw/
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / build output
+node_modules/
+dist/
+
+# Local env files and tooling
+.env
+.env.*
+.vercel/
