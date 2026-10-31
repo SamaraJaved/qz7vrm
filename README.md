@@ -160,9 +160,3 @@ The app is deployed as two Vercel projects from this one repository.
 3. Redeploy the frontend after setting `VITE_API_BASE_URL`, because Vite builds that value into the
    bundle. Then check `<backend-url>/api/health` and open the frontend URL.
 
-## Use of AI tools
-
-This project was built with the help of AI tools. **Claude (Anthropic), via Claude Code**, was used to
-help write and review code, including the React frontend, the Docker and Vercel configuration, and this
-README. All AI-assisted output was reviewed, run and tested by me: the backend test suite, the frontend
-lint and build, and checks of the API results against the raw data.
